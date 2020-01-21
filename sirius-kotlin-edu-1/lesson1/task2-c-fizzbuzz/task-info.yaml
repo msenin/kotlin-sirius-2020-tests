@@ -1,0 +1,88 @@
+type: edu
+files:
+- name: test/Tests.kt
+  visible: false
+  text: |-
+    package com.h0tk3y.spbsu.kotlin.course.lesson1
+
+    import org.junit.Assert
+    import org.junit.Test
+    import java.io.ByteArrayOutputStream
+    import java.io.PrintStream
+
+    class Test2C {
+        companion object {
+            val newline = System.getProperty("line.separator")
+        }
+
+        private fun testStdout(expected: String, fn: () -> Unit) {
+            val oldStdOut = System.out
+            try {
+                val stream = ByteArrayOutputStream()
+                stream.use {
+                    PrintStream(stream, true, "UTF-8").use { System.setOut(it); fn(); }
+                }
+                val actual = stream.toByteArray().inputStream().bufferedReader().readText()
+                Assert.assertEquals(expected, actual)
+            } finally {
+                System.setOut(oldStdOut)
+            }
+        }
+
+        @Test
+        fun testFizzBuzz() {
+            listOf(1..30, 10..200, -5..300).forEach { range ->
+                testStdout(range.joinToString(newline, "", newline, transform = {
+                    when {
+                        it % 15 == 0 -> "fizzbuzz"
+                        it % 5 == 0 -> "buzz"
+                        it % 3 == 0 -> "fizz"
+                        else -> it.toString()
+                    }
+                })) {
+                    fizzbuzz(range)
+                }
+            }
+        }
+    }
+  learner_created: false
+- name: src/Task2C.kt
+  visible: true
+  placeholders:
+  - offset: 80
+    length: 531
+    placeholder_text: "/*\n * Это популярная задача с собеседований на позицию мла\
+      дшего разработчика.\n * \n * Реализуйте функцию fizzbuzz, принимающую целочи\
+      сленный диапазон и выводящую на каждый элемент диапазона\n * по одной строке\
+      \ в консоль. Для чисел в диапазоне, кратных трём, выводите слово fizz, для к\
+      ратных пяти –\n * слово buzz, а для кратных 15-и (то есть кратных и трём, и\
+      \ пяти) – слово fizzbuzz.\n * Для остальных чисел выводите их строковое пред\
+      ставление.\n *\n * Пример вывода для диапазона 10..15: *//*\n  buzz\n  11\n\
+      \  fizz\n  13\n  14\n  fizzbuzz\n */"
+    initial_state:
+      length: 531
+      offset: 80
+    initialized_from_dependency: false
+    possible_answer: |2-
+          for (i in range) {
+              val message = buildString {
+                  if (i % 3 == 0) append("fizz")
+                  if (i % 5 == 0) append("buzz")
+                  if (isEmpty()) append(i)
+              }
+              println(message)
+          }
+    selected: true
+    status: Unchecked
+  text: "package com.h0tk3y.spbsu.kotlin.course.lesson1\n\nfun fizzbuzz(range: IntRange)\
+    \ {\n/*\n * Это популярная задача с собеседований на позицию младшего разработ\
+    чика.\n * \n * Реализуйте функцию fizzbuzz, принимающую целочисленный диапазон\
+    \ и выводящую на каждый элемент диапазона\n * по одной строке в консоль. Для ч\
+    исел в диапазоне, кратных трём, выводите слово fizz, для кратных пяти –\n * сл\
+    ово buzz, а для кратных 15-и (то есть кратных и трём, и пяти) – слово fizzbuzz.\n\
+    \ * Для остальных чисел выводите их строковое представление.\n *\n * Пример вы\
+    вода для диапазона 10..15: *//*\n  buzz\n  11\n  fizz\n  13\n  14\n  fizzbuzz\n\
+    \ */\n}\n"
+  learner_created: false
+status: Unchecked
+record: -1

@@ -1,0 +1,152 @@
+type: edu
+files:
+- name: test/Tests2.kt
+  visible: false
+  text: |-
+    import org.junit.Assert.*
+    import org.junit.Test
+    import kotlin.reflect.KMutableProperty
+    import kotlin.reflect.KType
+    import kotlin.reflect.full.memberFunctions
+    import kotlin.reflect.full.memberProperties
+    import kotlin.reflect.jvm.javaConstructor
+    import kotlin.reflect.jvm.javaMethod
+    import kotlin.reflect.jvm.javaType
+
+    class Tests2 {
+
+        @Test
+        fun testIntPair2() {
+            val clazz = IntPair2::class
+            assertTrue("Класс должен допускать наследование", clazz.isOpen || clazz.isAbstract)
+            assertTrue("Должно быть как минимум два конструктора", clazz.constructors.size >= 2)
+            assertTrue("Должен быть конструктор (Int, Int)", clazz.constructors.any { it.parameters.size == 2 && isInt(it.parameters[0].type) && isInt(it.parameters[1].type)})
+            assertTrue("Должен быть конструктор без параметров", clazz.constructors.any { it.parameters.isEmpty() && "PRIVATE" == it.visibility?.name })
+            assertEquals("Должно быть два свойства!", 2, clazz.memberProperties.size)
+            assertTrue("Должно быть неизменяемое свойство valueX : Int", clazz.memberProperties.any { it is KMutableProperty<*> && it.name == "valueX" && isInt(it.returnType) })
+            assertTrue("Должно быть неизменяемое свойство valueY : Int", clazz.memberProperties.any { it is KMutableProperty<*> && it.name == "valueY" && isInt(it.returnType) })
+            assertTrue("Класс должен быть абстрактным, т.к. должен содержать абстрактный метод gcd", clazz.isAbstract)
+            assertTrue("Нет требуемого метода sum", clazz.memberFunctions.any { it.name == "sum" && !it.isAbstract && it.isOpen && it.parameters.size == 1 && isInt(it.returnType) } )
+            assertTrue("Нет требуемого метода prod", clazz.memberFunctions.any { it.name == "prod" && !it.isAbstract && !it.isOpen && it.parameters.size == 1 && isInt(it.returnType) } )
+            assertTrue("Нет требуемого метода gcd", clazz.memberFunctions.any { it.name == "gcd" && it.isAbstract && it.parameters.size == 1 && isInt(it.returnType) } )
+        }
+
+        @Test
+        fun testDerivedIntPair2() {
+            val clazz = DerivedIntPair2::class
+            assertTrue("Класс не должен допускать наследование", !clazz.isOpen && !clazz.isAbstract)
+            assertTrue("Должен быть конструктор (Int, Int)", clazz.constructors.any { it.parameters.size == 2 && isInt(it.parameters[0].type) && isInt(it.parameters[1].type)})
+            assertTrue("Нет требуемого метода gcd", clazz.memberFunctions.any { it.name == "gcd" && !it.isAbstract && it.parameters.size == 1 && isInt(it.returnType) } )
+        }
+
+        @Test
+        fun testMethods() {
+            assertMethodResult("sum", -9, 10, 1, "Неверный ответ для sum(-9,10)")
+            assertMethodResult("prod", 10, 10, 100, "Неверный ответ для prod(10,10)")
+            assertMethodResult("sum", 0, -10, -10, "Неверный ответ для sum(0,-10)")
+            assertMethodResult("prod", 0, -100, 0, "Неверный ответ для prod(0,-100)")
+            assertMethodResult("gcd", 30, 18, 6, "Неверный ответ для gcd(30,18)")
+        }
+
+        private fun assertMethodResult(methodName: String, x: Int, y: Int, expected: Int, message: String = "") {
+            try {
+                val kClass = DerivedIntPair2::class
+                val instance = kClass.constructors
+                        .first {
+                            it.parameters.size == 2 &&
+                                    isInt(it.parameters[0].type) &&
+                                    isInt(it.parameters[1].type)
+                        }
+                        .javaConstructor!!.newInstance(x, y)
+                val result: Int = kClass.memberFunctions.first { it.name == methodName }.javaMethod!!.invoke(instance) as Int
+                assertEquals(message, expected, result)
+            }
+            catch (e: Exception) {
+                fail("Не получается вызвать метод $methodName: $e")
+            }
+        }
+
+        private fun isInt(type: KType) = type.javaType.typeName == "int" || type.javaType.typeName == "java.lang.Integer"
+    }
+  learner_created: false
+- name: src/Task3B.kt
+  visible: true
+  placeholders:
+  - offset: 0
+    length: 496
+    placeholder_text: |-
+      /**
+       * Объявите класс IntPair2 такой, чтобы он
+       *    - допускал наследование
+       *    - содержал изменяемые свойства valueX и valueY типа Int,
+       *    - имел конструктор с двумя параметрами - valueX и valueY
+       *    - имел private конструктор без параметров
+       *    - имел метод переопределяемый sum, возвращающий сумму valueX и valueY - Int
+       *    - имел метод непереопределяемый prod, возвращающий произведение valueX и valueY - Int
+       *    - имел абстрактный метод gcd, возвращающий Int
+       */
+      class IntPair2
+    initial_state:
+      length: 496
+      offset: 0
+    initialized_from_dependency: false
+    possible_answer: |-
+      abstract class IntPair2(var valueX: Int, var valueY: Int) {
+          private constructor(): this(-1, -1)
+
+          open fun sum(): Int = valueX + valueY
+
+          fun prod() = valueX * valueY
+
+          abstract fun gcd(): Int
+      }
+    selected: true
+    status: Unchecked
+  - offset: 498
+    length: 378
+    placeholder_text: |-
+      /*
+       *    Далее объявите класс-наследник DerivedIntPair2 такой, чтобы он
+       *    - не допускал дальнейшего наследования
+       *    - имел конструктор с двумя параметрами - valueX и valueY
+       *    - переопределял метод gcd и реулизовывал в нём вычисление наибольшего общего делителя свойств valueX и valueY
+       *     (см. https://younglinux.info/algorithm/euclidean)
+       */
+      class DerivedIntPair2
+    initial_state:
+      length: 378
+      offset: 498
+    initialized_from_dependency: false
+    possible_answer: |-
+      class DerivedIntPair2(valueX: Int, valueY: Int): IntPair2(valueX, valueY) {
+
+          private tailrec fun gcdImpl(a: Int, b: Int): Int = if (b == 0) a else gcdImpl(b, a % b)
+
+          override fun gcd(): Int = gcdImpl(valueX, valueY)
+      }
+    selected: true
+    status: Unchecked
+  text: |
+    /**
+     * Объявите класс IntPair2 такой, чтобы он
+     *    - допускал наследование
+     *    - содержал изменяемые свойства valueX и valueY типа Int,
+     *    - имел конструктор с двумя параметрами - valueX и valueY
+     *    - имел private конструктор без параметров
+     *    - имел метод переопределяемый sum, возвращающий сумму valueX и valueY - Int
+     *    - имел метод непереопределяемый prod, возвращающий произведение valueX и valueY - Int
+     *    - имел абстрактный метод gcd, возвращающий Int
+     */
+    class IntPair2
+
+    /*
+     *    Далее объявите класс-наследник DerivedIntPair2 такой, чтобы он
+     *    - не допускал дальнейшего наследования
+     *    - имел конструктор с двумя параметрами - valueX и valueY
+     *    - переопределял метод gcd и реулизовывал в нём вычисление наибольшего общего делителя свойств valueX и valueY
+     *     (см. https://younglinux.info/algorithm/euclidean)
+     */
+    class DerivedIntPair2
+  learner_created: false
+status: Unchecked
+record: -1

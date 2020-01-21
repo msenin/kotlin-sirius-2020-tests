@@ -1,0 +1,127 @@
+type: edu
+files:
+- name: test/Tests.kt
+  visible: false
+  text: |-
+    package com.h0tk3y.spbsu.kotlin.course.lesson1
+
+    import org.junit.Assert
+    import org.junit.Test
+    import java.io.ByteArrayOutputStream
+    import java.io.PrintStream
+
+    class Test {
+        companion object {
+            val newline = System.getProperty("line.separator")
+        }
+
+        private fun testStdout(expected: String, fn: () -> Unit) {
+            val oldStdOut = System.out
+            try {
+                val stream = ByteArrayOutputStream()
+                stream.use {
+                    PrintStream(stream, true, "UTF-8").use { System.setOut(it); fn(); }
+                }
+                val actual = stream.toByteArray().inputStream().bufferedReader().readText()
+                Assert.assertEquals(expected, actual)
+            } finally {
+                System.setOut(oldStdOut)
+            }
+        }
+
+        private fun swapIfNeeded(name: String): String {
+            val indexOfSpace = name.indexOf(' ')
+            return if (indexOfSpace >= 0 && name.count { it == ' '} == 1) {
+                name.drop(indexOfSpace + 1) + " " + name.take(indexOfSpace)
+            } else {
+                return name
+            }
+        }
+
+        @Test
+        fun testGreet() {
+            listOf("abc", "", "=123", "John Doe", "One, two, three", "Иванов Иван").forEach {
+                testStdout("Hello, ${swapIfNeeded(it)}!$newline") { greet(it) }
+            }
+        }
+
+        @Test
+        fun testSolutionNoUsername() {
+            testStdout("Hello, world!$newline") { main(arrayOf()) }
+        }
+
+        @Test
+        fun testSolutionWithArgs() {
+            testStdout("Hello, one!${newline}Hello, two!${newline}Hello, three!$newline") {
+                main(arrayOf("one", "two", "three"))
+            }
+        }
+    }
+  learner_created: false
+- name: src/Task1A.kt
+  visible: true
+  placeholders:
+  - offset: 74
+    length: 789
+    placeholder_text: "/**\n * Напишите тело функции, выводящее приветствие в виде\
+      :\n * \"Hello, ...!\" без кавычек, подставляя вместо \"...\"\n * переданное\
+      \ имя, преобразованное следующим образом:\n *\n * Если в переданной строке р\
+      овно один пробел, то считайте строку фамилией и именем и поменяйте местами\n\
+      \ * части строки слева и справа от пробела. Например, если name = \"Ivanov Ivan\"\
+      , то\n * нужно вывести \"Hello, Ivan Ivanov!\". Иначе используйте строку как\
+      \ есть.\n *\n * Доступ к i-му символу строки можно получить, используя опера\
+      тор: name[i].\n * Проверить, является ли символ пробелом (' '), можно с помо\
+      щью сравнения (==). \n *\n * Для операции взятия подстроки по индексам испол\
+      ьзуйте\n * name.substring(startIndex, endIndex), где нумерация символов с ну\
+      ля, а символ на позиции\n * endIndex не включается в результат.\n */"
+    initial_state:
+      length: 789
+      offset: 74
+    initialized_from_dependency: false
+    possible_answer: |2-
+          val spaces = name.indices.filter { name[it] == ' ' }
+          val singleSpace = spaces.singleOrNull()
+          val newName = if (singleSpace != null) {
+              name.drop(singleSpace + 1) + " " + name.take(singleSpace)
+          } else
+              name
+
+          println("Hello, $newName!")
+    selected: false
+    status: Unchecked
+  - offset: 899
+    length: 182
+    placeholder_text: |-
+      /**
+       * Вызовите функцию greet для каждого
+       * аргумента командной строки или же, если не
+       * передано ни одного аргумента, вызовите greet один
+       * раз, чтобы вывести "Hello, world!"
+       */
+    initial_state:
+      length: 182
+      offset: 899
+    initialized_from_dependency: false
+    possible_answer: |2-
+          val names = if (args.isEmpty()) arrayOf("world") else args
+          names.forEach { greet(it) }
+    selected: false
+    status: Unchecked
+  text: "package com.h0tk3y.spbsu.kotlin.course.lesson1\n\nfun greet(name: String)\
+    \ {\n/**\n * Напишите тело функции, выводящее приветствие в виде:\n * \"Hello,\
+    \ ...!\" без кавычек, подставляя вместо \"...\"\n * переданное имя, преобразов\
+    анное следующим образом:\n *\n * Если в переданной строке ровно один пробел, т\
+    о считайте строку фамилией и именем и поменяйте местами\n * части строки слева\
+    \ и справа от пробела. Например, если name = \"Ivanov Ivan\", то\n * нужно выв\
+    ести \"Hello, Ivan Ivanov!\". Иначе используйте строку как есть.\n *\n * Досту\
+    п к i-му символу строки можно получить, используя оператор: name[i].\n * Прове\
+    рить, является ли символ пробелом (' '), можно с помощью сравнения (==). \n *\n\
+    \ * Для операции взятия подстроки по индексам используйте\n * name.substring(startIndex,\
+    \ endIndex), где нумерация символов с нуля, а символ на позиции\n * endIndex н\
+    е включается в результат.\n */\n}\n\nfun main(args: Array<String>) {\n/**\n *\
+    \ Вызовите функцию greet для каждого\n * аргумента командной строки или же, ес\
+    ли не\n * передано ни одного аргумента, вызовите greet один\n * раз, чтобы выв\
+    ести \"Hello, world!\"\n */\n}"
+  learner_created: false
+status: Unchecked
+record: -1

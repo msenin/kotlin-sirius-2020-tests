@@ -1,0 +1,67 @@
+type: edu
+files:
+- name: test/Tests1.kt
+  visible: false
+  text: |-
+    import org.junit.Assert.assertEquals
+    import org.junit.Assert.assertTrue
+    import org.junit.Test
+    import kotlin.reflect.KMutableProperty
+    import kotlin.reflect.KType
+    import kotlin.reflect.full.memberProperties
+    import kotlin.reflect.jvm.javaType
+
+    class Tests3A {
+        @Test
+        fun testIntPair1() {
+            val clazz = IntPair1::class
+            assertTrue("Класс должен содержать неявные методы hashCode(), equals(), toString(), component1(), component2() и copy()", clazz.isData)
+            assertTrue("Должно быть как минимум два конструктора", clazz.constructors.size >= 2)
+            assertTrue("Должно быть конструктор без параметров", clazz.constructors.any { it.parameters.isEmpty() })
+            assertTrue("Должно быть конструктор (Int, Int)", clazz.constructors.any { it.parameters.size == 2 && isInt(it.parameters[0].type) && isInt(it.parameters[1].type)})
+            assertEquals("Должно быть два свойства!", 2, clazz.memberProperties.size)
+            assertTrue("Должно быть неизменяемое свойство valueX : Int", clazz.memberProperties.any { it !is KMutableProperty<*> && it.name == "valueX" && isInt(it.returnType) })
+            assertTrue("Должно быть неизменяемое свойство valueY : Int", clazz.memberProperties.any { it !is KMutableProperty<*> && it.name == "valueY" && isInt(it.returnType) })
+            val check = IntPair1()
+            assertEquals("Неверная инициализация в конструкторе без параметров", "IntPair1(valueX=-1, valueY=-1)", check.toString())
+        }
+
+        private fun isInt(type: KType) = type.javaType.typeName == "int" || type.javaType.typeName == "java.lang.Integer"
+    }
+  learner_created: false
+- name: src/Task3A.kt
+  visible: true
+  placeholders:
+  - offset: 0
+    length: 373
+    placeholder_text: |-
+      /**
+       * Объявите класс IntPair1 такой, чтобы он
+       *    - содержал неявные методы hashCode(), equals(), toString(), component1(), component2() и copy()
+       *    - содержал неизменяемые свойства valueX и valueY типа Int
+       *    - конструктор без параметров (valueX и valueY инициализируются значениями -1)
+       *    - конструктор с двумя параметрами - valueX и valueY
+       */
+      class IntPair1
+    initial_state:
+      length: 373
+      offset: 0
+    initialized_from_dependency: false
+    possible_answer: |-
+      data class IntPair1(val valueX: Int, val valueY: Int) {
+          constructor(): this(-1, -1)
+      }
+    selected: true
+    status: Unchecked
+  text: |-
+    /**
+     * Объявите класс IntPair1 такой, чтобы он
+     *    - содержал неявные методы hashCode(), equals(), toString(), component1(), component2() и copy()
+     *    - содержал неизменяемые свойства valueX и valueY типа Int
+     *    - конструктор без параметров (valueX и valueY инициализируются значениями -1)
+     *    - конструктор с двумя параметрами - valueX и valueY
+     */
+    class IntPair1
+  learner_created: false
+status: Unchecked
+record: -1

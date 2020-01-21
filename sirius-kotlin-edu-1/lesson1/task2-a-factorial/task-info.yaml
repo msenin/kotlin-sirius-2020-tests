@@ -1,0 +1,67 @@
+type: edu
+files:
+- name: test/Tests.kt
+  visible: false
+  text: |-
+    package com.h0tk3y.spbsu.kotlin.course.lesson1
+
+    import org.junit.Assert
+    import org.junit.Test
+
+    class TestA {
+        private fun doTest(expected: Int, n: Int) {
+            try {
+                val actual = factorial(n)
+                Assert.assertEquals("factorial($n) should be $expected, but was $actual", expected, actual)
+            } catch (e: StackOverflowError) {
+                Assert.fail("Stack overflow in factorial($n).")
+            }
+        }
+
+        @Test
+        fun testFactorial() {
+            Assert.assertEquals(-1, factorial(-123))
+            Assert.assertEquals(-1, factorial(-1))
+            Assert.assertEquals(1, factorial(0))
+            var res = 1
+            for (i in 1..10) {
+                res *= i
+                Assert.assertEquals(res, factorial(i))
+            }
+        }
+    }
+  learner_created: false
+- name: src/Task2A.kt
+  visible: true
+  placeholders:
+  - offset: 77
+    length: 209
+    placeholder_text: |-
+      /**
+       * Реализуйте функцию factorial, вычисляющую значение факториала.
+       * Значение факториала нуля считайте едииницей.
+       * Факториалом отрицательных чисел считайте -1. Целочисленное переполнение игнорируйте.
+       */
+    initial_state:
+      length: 209
+      offset: 77
+    initialized_from_dependency: false
+    possible_answer: |-
+      when {
+          n < 0 -> -1
+          n == 0 -> 1
+          else -> n * factorial(n - 1)
+      }
+    selected: false
+    status: Unchecked
+  text: |-
+    package com.h0tk3y.spbsu.kotlin.course.lesson1
+
+    fun factorial(n: Int): Int = /**
+     * Реализуйте функцию factorial, вычисляющую значение факториала.
+     * Значение факториала нуля считайте едииницей.
+     * Факториалом отрицательных чисел считайте -1. Целочисленное переполнение игнорируйте.
+     */
+  learner_created: false
+status: Unchecked
+record: -1
