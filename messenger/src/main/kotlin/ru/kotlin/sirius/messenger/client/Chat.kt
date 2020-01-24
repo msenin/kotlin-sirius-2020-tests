@@ -14,11 +14,11 @@ class Chat(val chatId: Int, user: User) : UserAware(user) {
     }
 
     fun inviteUser(userIdToInvite: String) {
-        client.usersInviteToChat(userIdToInvite, chatId, user.userId, user.token)
+        client.usersInviteToChat(userIdToInvite, chatId, user.authInfo)
     }
 
     fun sendMessage(text: String) : Message {
-        val info = client.chatMessagesCreate(chatId, text, user.userId, user.token)
+        val info = client.chatMessagesCreate(chatId, text, user.authInfo)
         val newMessage = Message(
             info.messageId,
             userMember,
@@ -31,7 +31,7 @@ class Chat(val chatId: Int, user: User) : UserAware(user) {
     }
 
     fun refresh() {
-        val membersInfo = client.chatsMembersList(chatId, user.userId, user.token)
+        val membersInfo = client.chatsMembersList(chatId, user.authInfo)
         name = membersInfo.first { it.userId == user.userId }.chatDisplayName
         // FIXME: эффективнее определять разницу между membersInfo и members и добавлять/удалять только изменившиеся элементы
         members.clear()
@@ -48,7 +48,7 @@ class Chat(val chatId: Int, user: User) : UserAware(user) {
     }
 
     private fun refreshMessages() {
-        val messagesInfo = client.chatMessagesList(chatId, user.userId, user.token)
+        val messagesInfo = client.chatMessagesList(chatId, user.authInfo)
         // FIXME: эффективнее определять разницу между messagesInfo и messages и добавлять/удалять только изменившиеся элементы
         messages.clear()
         messages.addAll(messagesInfo.map { info ->

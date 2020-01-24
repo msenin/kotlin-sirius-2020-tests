@@ -1,51 +1,54 @@
 package ru.kotlin.sirius.messenger.client
 
+import ru.kotlin.sirius.messenger.api.AuthInfo
 import java.time.Instant
 
 /**
  * Пользователь
  */
-class User internal constructor(val userId: String, var token: String, client: MessengerClient) : ClientAware(client) {
+class User internal constructor(val userId: String,
+                                var authInfo: AuthInfo,
+                                client: MessengerClient) : ClientAware(client) {
     val chats =  mutableListOf<Chat>()
     lateinit var name: String
     lateinit var systemChat: Chat
-    lateinit var lastUpdated : Instant
+    private lateinit var lastUpdated : Instant
 
     init {
         refresh()
     }
 
     fun signOut() {
-        client.signOut(userId, token)
+        client.signOut(authInfo)
     }
 
     fun refresh() {
-        val userInfo = client.usersListById(userId, userId, token).first()
+        val userInfo = client.usersListById(userId, authInfo) ?: throw UserNotFoundException()
         name = userInfo.displayName
         refreshChats()
         lastUpdated = Instant.now()
     }
 
     fun refreshChats() {
-        val chatsInfo = client.chatsListByUserId(userId, token)
+        val chatsInfo = client.chatsListByUserId(authInfo)
         chats.clear()
         chats.addAll(chatsInfo.map { Chat(it.chatId, this) })
         systemChat = chats.first { chat ->
             chat.members.any {
-                it.memberUserId == client.getSystemUserId()
+                it.memberUserId == client.getSystemUserId(authInfo)
             }
         }
     }
 
     fun createChat(chatName: String): Chat {
-        val chatInfo = client.chatsCreate(chatName, userId, token)
+        val chatInfo = client.chatsCreate(chatName, authInfo)
         val newChat = Chat(chatInfo.chatId, this)
         chats.add(newChat)
         return newChat
     }
 
     fun joinToChat(chatId: Int, secret: String, chatName: String? = null): Chat {
-        client.chatsJoin(chatId, secret, userId, token, chatName)
+        client.chatsJoin(chatId, secret, authInfo, chatName)
         val newChat = Chat(chatId, this)
         chats.add(newChat)
         return newChat

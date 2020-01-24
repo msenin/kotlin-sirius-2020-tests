@@ -12,11 +12,11 @@ class Storage {
     private val messages = mutableListOf<MessageInfo>()
 
     private val chatId2secret = mutableMapOf<Int, String>()
-    private val token2userId = mutableMapOf<String, String>()
+    private val refreshToken2userId = mutableMapOf<String, String>()
 
     internal fun clear() {
         users.clear()
-        token2userId.clear()
+        refreshToken2userId.clear()
         chats.clear()
         members.clear()
         messages.clear()
@@ -52,20 +52,26 @@ class Storage {
     }
 
     fun findUserById(userId: String): UserInfo? {
-        // TODO: Реализовать метод поиска пользователя в списке users по его userId
-        return null
+        return users.firstOrNull{ it.userId == userId }
     }
 
-    fun addToken(userId: String, token: String) {
-        token2userId[token] = userId
+    fun addRefreshToken(userId: String, token: String) {
+        refreshToken2userId[token] = userId
     }
 
-    fun getUserIdByToken(token: String) : String? {
-        return token2userId[token]
+    fun getUserIdByRefreshToken(token: String) : String? {
+        return refreshToken2userId[token]
     }
 
-    fun removeToken(token: String) {
-        token2userId.remove(token)
+    fun removeRefreshToken(token: String) {
+        refreshToken2userId.remove(token)
+    }
+
+    fun removeRefreshTokensByUserId(userId: String) {
+        val pairsToRemove = refreshToken2userId.filterValues { it != userId }
+        for (entry in pairsToRemove) {
+            refreshToken2userId.remove(entry.key, entry.value)
+        }
     }
 
     fun findUsersByPartOfName(partOfName: String?): List<UserInfo> {
@@ -89,8 +95,7 @@ class Storage {
     }
 
     fun findMemberByChatIdAndUserId(chatId: Int, userId: String) : MemberInfo? {
-        // TODO: Реализовать метод поиска участника чата в списке members по chatId и userId
-        return null
+        return members.firstOrNull { it.chatId == chatId && it.userId == userId }
     }
 
     fun findMemberById(memberId: Int) : MemberInfo? {
@@ -103,7 +108,7 @@ class Storage {
 
     fun addChatMember(newMemberInfo: MemberInfo) {
         if (containsMember(newMemberInfo.chatId, newMemberInfo.userId)) {
-            throw MemberAlreadyExistsException()
+            throw UserAlreadyMemberException()
         }
         members.add(newMemberInfo)
     }
@@ -143,11 +148,10 @@ class Storage {
         messages.add(messageInfo)
     }
 
-    // Подсказка: в этой функции ошибка!
     fun findMessages(chatId: Int, afterMessageId : Int = 0) : List<MessageInfo> {
         val chatMembers = findMemberIdsByChatId(chatId)
         val createdAfter = if (afterMessageId > 0) {
-            messages.first { it.messageId == afterMessageId }.createdOn
+            messages.firstOrNull { it.messageId == afterMessageId }?.createdOn
         }
         else {
             null
