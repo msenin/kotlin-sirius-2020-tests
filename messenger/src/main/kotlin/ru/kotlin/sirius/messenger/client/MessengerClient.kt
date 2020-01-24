@@ -26,7 +26,7 @@ class MessengerClient(messengerBaseUrl: String) {
         }
         val errorMessage = "code: ${code()} response: ${errorBody()}"
         logger.debug(errorMessage)
-        throw UnexpectedSeverResponseException(errorMessage)
+        throw UnexpectedServerResponseException(errorMessage)
     }
 
     private fun <T> Response<T>.result() : T {
@@ -34,7 +34,7 @@ class MessengerClient(messengerBaseUrl: String) {
         if (result == null) {
             val errorMessage = "Unexpected empty response"
             logger.debug(errorMessage)
-            throw UnexpectedSeverResponseException(errorMessage)
+            throw UnexpectedServerResponseException(errorMessage)
         }
         return result
     }
@@ -49,50 +49,71 @@ class MessengerClient(messengerBaseUrl: String) {
     }
 
     fun signOut(authInfo: AuthInfo) {
-        api.signOut(authInfo.accessToken)
+        api.signOut(authInfo.accessTokenHeader)
     }
 
     fun usersListById(userIdToFind: String, authInfo: AuthInfo): UserInfo? {
-        return api.getUserByUserId(userIdToFind, authInfo.accessToken).execute().resultOrNull()
+        return api.getUserByUserId(userIdToFind, authInfo.accessTokenHeader).execute().resultOrNull()
     }
 
     fun chatsListByUserId(authInfo: AuthInfo): List<ChatInfo> {
-        return api.listChats(authInfo.accessToken).execute().resultOrNull() ?: emptyList()
+        return api.listChats(authInfo.accessTokenHeader).execute().resultOrNull() ?: emptyList()
     }
 
     fun getSystemUserId(authInfo: AuthInfo): String {
-        return api.getSystemUser(authInfo.accessToken).execute().resultOrNull()?.userId ?: throw IllegalStateException("System user not found!")
+        return api.getSystemUser(authInfo.accessTokenHeader).execute().resultOrNull()?.userId ?: throw IllegalStateException("System user not found!")
     }
 
     fun chatsCreate(chatName: String, authInfo: AuthInfo): ChatInfo {
-        return api.createChat(NewChatInfo(chatName), authInfo.accessToken).execute().result()
+        return api.createChat(NewChatInfo(chatName), authInfo.accessTokenHeader).execute().result()
     }
 
     fun chatsJoin(chatId: Int, secret: String, authInfo: AuthInfo, chatName: String? = null)  {
-        api.joinToChat(chatId, JoinChatInfo(chatName, secret), authInfo.accessToken).execute().result()
+        api.joinToChat(chatId, JoinChatInfo(chatName, secret), authInfo.accessTokenHeader).execute().result()
     }
 
     fun usersInviteToChat(userIdToInvite: String, chatId: Int, authInfo: AuthInfo) {
-        api.inviteToChat(chatId, InviteChatInfo(userIdToInvite), authInfo.accessToken).execute().result()
+        api.inviteToChat(chatId, InviteChatInfo(userIdToInvite), authInfo.accessTokenHeader).execute().result()
     }
 
     fun chatMessagesCreate(chatId: Int, text: String, authInfo: AuthInfo): MessageInfo {
-        return api.sendMessage(chatId, NewMessageInfo(text), authInfo.accessToken).execute().result()
+        return api.sendMessage(chatId, NewMessageInfo(text), authInfo.accessTokenHeader).execute().result()
     }
 
     fun chatsMembersList(chatId: Int, authInfo: AuthInfo): List<MemberInfo> {
-        return api.listChatMembers(chatId, authInfo.accessToken).execute().resultOrNull() ?: emptyList()
+        return api.listChatMembers(chatId, authInfo.accessTokenHeader).execute().resultOrNull() ?: emptyList()
     }
 
     fun chatMessagesList(chatId: Int, authInfo: AuthInfo): List<MessageInfo> {
-        return api.listMessages(chatId, authInfo.accessToken).execute().resultOrNull()  ?: emptyList()
+        return api.listMessages(chatId, authInfo.accessTokenHeader).execute().resultOrNull()  ?: emptyList()
     }
 }
 
 class UserNotSignedInException : Throwable()
 class UserNotFoundException : Throwable()
-class UnexpectedSeverResponseException(message: String) : Throwable(message)
+class UnexpectedServerResponseException(message: String) : Throwable(message)
 
 open class ClientAware (val client: MessengerClient)
 open class UserAware (val user: User) : ClientAware(user.client)
 open class ChatAware (chat: Chat) : UserAware(chat.user)
+
+fun main() {
+//    val client = MessengerClient("http://13.48.191.79/")
+    val client = MessengerClient("http://127.0.0.1:9999/")
+
+    val password = "Тут должен быть ваш пароль"
+    val userId = "Тут ваш логин"
+    val name = "Тут ваше имя"
+
+    // регистрация пользователя
+    val userInfo = client.register(userId, name, password)
+    println(userInfo?.displayName)
+
+    // логинимся в чат
+    val user = client.signIn(userId, password)
+    println("access token: ${user.authInfo.accessToken}")
+
+    // вывод списка чатов
+    println("Список чатов и сообщений в них:")
+    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
+}

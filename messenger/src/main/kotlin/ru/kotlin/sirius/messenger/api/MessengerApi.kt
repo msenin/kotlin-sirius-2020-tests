@@ -7,7 +7,9 @@ import java.time.Instant
 data class UserInfo(val userId: String, val displayName: String)
 data class NewUserInfo(val userId: String, val displayName: String, val password: String)
 data class PasswordInfo(val password: String)
-data class AuthInfo(val accessToken: String, val refreshToken: String)
+data class AuthInfo(val accessToken: String, val refreshToken: String) {
+    val accessTokenHeader = "Bearer $accessToken"
+}
 data class ChatInfo(val chatId: Int, val defaultName: String)
 data class NewChatInfo(val defaultName: String)
 data class JoinChatInfo(val defaultName: String?, val secret: String)
@@ -25,36 +27,36 @@ interface MessengerApi {
     fun signIn(@Path("userId") userId: String, @Body password: PasswordInfo): Call<AuthInfo>
 
     @POST("/v1/me/signout")
-    fun signOut(@Header("Authorization") accessToken: String): Call<UserInfo>
+    fun signOut(@Header("Authorization") accessTokenHeader: String): Call<UserInfo>
 
     @POST("/v1/chats")
-    fun createChat(@Body newChatInfo: NewChatInfo, @Header("Authorization") accessToken: String): Call<ChatInfo>
+    fun createChat(@Body newChatInfo: NewChatInfo, @Header("Authorization") accessTokenHeader: String): Call<ChatInfo>
 
     @POST("/v1/chats/{chatId}/invite")
-    fun inviteToChat(@Path("chatId") chatId: Int, @Body inviteInfo: InviteChatInfo, @Header("Authorization") accessToken: String): Call<Map<String,String>>
+    fun inviteToChat(@Path("chatId") chatId: Int, @Body inviteInfo: InviteChatInfo, @Header("Authorization") accessTokenHeader: String): Call<Map<String,String>>
 
     @POST("/v1/chats/{chatId}/join")
-    fun joinToChat(@Path("chatId") chatId: Int, @Body joinInfo: JoinChatInfo, @Header("Authorization") accessToken: String): Call<Map<String,String>>
+    fun joinToChat(@Path("chatId") chatId: Int, @Body joinInfo: JoinChatInfo, @Header("Authorization") accessTokenHeader: String): Call<Map<String,String>>
 
     @GET("/v1/me/chats")
-    fun listChats(@Header("Authorization") accessToken: String): Call<List<ChatInfo>>
+    fun listChats(@Header("Authorization") accessTokenHeader: String): Call<List<ChatInfo>>
 
     @GET("/v1/chats/{chatId}/members")
-    fun listChatMembers(@Path("chatId") chatId: Int, @Header("Authorization") accessToken: String): Call<List<MemberInfo>>
+    fun listChatMembers(@Path("chatId") chatId: Int, @Header("Authorization") accessTokenHeader: String): Call<List<MemberInfo>>
 
     @POST("/v1/chats/{chatId}/messages/")
-    fun sendMessage(@Path("chatId") chatId: Int, @Body message: NewMessageInfo, @Header("Authorization") accessToken: String): Call<MessageInfo>
+    fun sendMessage(@Path("chatId") chatId: Int, @Body message: NewMessageInfo, @Header("Authorization") accessTokenHeader: String): Call<MessageInfo>
 
     @GET("/v1/chats/{chatId}/messages/")
-    fun listMessages(@Path("chatId") chatId: Int, @Header("Authorization") accessToken: String, @Query("after_id") afterId: Int = 0): Call<List<MessageInfo>>
+    fun listMessages(@Path("chatId") chatId: Int, @Header("Authorization") accessTokenHeader: String, @Query("after_id") afterId: Int = 0): Call<List<MessageInfo>>
 
     @GET("/v1/users")
-    fun findUsersByPartOfName(@Header("Authorization") accessToken: String, @Query("name") name: String): Call<List<UserInfo>>
+    fun findUsersByPartOfName(@Header("Authorization") accessTokenHeader: String, @Query("name") name: String): Call<List<UserInfo>>
 
     @GET("/v1/users/{userId}")
-    fun getUserByUserId(@Path("userId") userId: String, @Header("Authorization") accessToken: String): Call<UserInfo?>
+    fun getUserByUserId(@Path("userId") userId: String, @Header("Authorization") accessTokenHeader: String): Call<UserInfo?>
 
     @GET("/v1/admin")
-    fun getSystemUser(@Header("Authorization") accessToken: String): Call<UserInfo>
+    fun getSystemUser(@Header("Authorization") accessTokenHeader: String): Call<UserInfo>
 
 }
