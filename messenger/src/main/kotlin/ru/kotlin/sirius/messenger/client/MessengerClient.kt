@@ -1,5 +1,6 @@
 package ru.kotlin.sirius.messenger.client
 
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.apache.commons.logging.LogFactory
 import retrofit2.Response
@@ -14,7 +15,10 @@ import java.lang.IllegalStateException
  */
 class MessengerClient(messengerBaseUrl: String) {
     val logger = LogFactory.getLog(MessengerClient::class.java)
-    private val objectMapper = jacksonObjectMapper()
+    private val objectMapper = jacksonObjectMapper().apply {
+        configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
+        configure(JsonParser.Feature.IGNORE_UNDEFINED, true)
+    }
     private val api = Retrofit.Builder()
         .baseUrl(messengerBaseUrl)
         .addConverterFactory(JacksonConverterFactory.create(objectMapper))
@@ -101,18 +105,33 @@ fun main() {
 //    val client = MessengerClient("http://13.48.191.79/")
     val client = MessengerClient("http://127.0.0.1:9999/")
 
-    val password = "Тут должен быть ваш пароль"
-    val userId = "Тут ваш логин"
-    val name = "Тут ваше имя"
+    val password = "vbifyz2020!"
+    val userId = "senin"
+    val name = "Михаил Сенин"
 
     // регистрация пользователя
-    val userInfo = client.register(userId, name, password)
-    println(userInfo?.displayName)
+    val userInfo1 = client.register(userId, name, password)
+    println(userInfo1?.displayName)
 
     // логинимся в чат
     val user = client.signIn(userId, password)
     println("access token: ${user.authInfo.accessToken}")
 
+    // вывод списка чатов
+    println("Список чатов и сообщений в них:")
+    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
+
+    // регистрация пользователя
+    val userInfo = client.register("user2", "user2", "password")
+    println(userInfo?.displayName)
+
+    // логинимся в чат
+    val user2 = client.signIn("user2", "password")
+
+    val chat = user2.createChat("test")
+    chat.inviteUser(userId)
+
+    user.refresh()
     // вывод списка чатов
     println("Список чатов и сообщений в них:")
     user.chats.forEach { println("${it.name}: ${it.messages.size}") }

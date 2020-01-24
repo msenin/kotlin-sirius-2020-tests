@@ -5,8 +5,8 @@ import java.time.Instant
 /**
  * Сообщение
  */
-data class MessageInfo (val messageId: Int, val memberId: Int, var text: String) {
-    internal val createdOn = Instant.now()
+data class MessageInfo (val messageId: Int, val memberId: Int, var text: String, val createdOn: Long = System.currentTimeMillis()) {
+
 }
 
 data class NewMessageInfo (var text: String)
