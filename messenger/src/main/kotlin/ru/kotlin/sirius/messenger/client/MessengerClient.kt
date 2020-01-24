@@ -106,19 +106,19 @@ open class ChatAware (chat: Chat) : UserAware(chat.user)
 fun main() {
     val client = MessengerClient("http://13.48.191.79/")
 
-    val password = "kotlin"
-    val UserID = "Lounres"
-    val login = "Глеб Минаев"
+    val password = "Тут должен быть ваш пароль"
+    val userID = "Тут ваш логин"
+    val name = "Тут ваше имя"
 
-    var user : User = client.signIn(UserID, password)
+    var user : User = client.signIn(userID, password)
     var chat : Chat = user.chats[0]
 
     fun Register(): Unit {
-        client.register(UserID, login, password)
+        client.register(userID, login, password)
     }
 
     fun SignIn() : Unit {
-         user = client.signIn(UserID, password)
+         user = client.signIn(userID, password)
     }
 
     fun SignOut(): Unit {
@@ -234,40 +234,4 @@ fun main() {
         println()
     }
 
-    // регистрация пользователя
-//    val userInfo1 = client.register(userId, name, password)
-//    println(userInfo1?.displayName)
-
-    // логинимся в чат
-//    val user = client.signIn(userId, password)
-//    println("access token: ${user.authInfo.accessToken}")
-
-    // вывод списка чатов
-//    println("Список чатов и сообщений в них:")
-//    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
-
-    // регистрация пользователя
-//    val userInfo = client.register("user2", "user2", "password")
-//    println(userInfo?.displayName)
-
-    // логинимся в чат
-//    val user2 = client.signIn("user2", "password")
-
-//    val chat = user2.createChat("test")
-//    val chat = user.createChat("Hello, Kotlin!")
-//    chat.inviteUser(userId)
-//    chat.inviteUser("senin")
-
-    //user.refresh()
-    // вывод списка чатов
-//    println("Список чатов и сообщений в них:")
-//    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
-
-    //user.chats[1].sendMessage("")
-    //user.chats[1].messages.forEach { println(it)}
-    //user.chats[1].sendMessage("О! Получилось. Ура, вот и сообщение.")
-    //user.chats[1].sendMessage("Извините, не успел вас спросить после лекции. Как ведёт себя Kotlin при встрече глубых строк таких, как \"x\", \"x+5\" и т.п. (т.е. строк, которые ничего в результате не делают)?")
-
-
-    //user.signOut()
 }
