@@ -9,6 +9,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory
 import ru.kotlin.sirius.messenger.api.MessengerApi
 import ru.kotlin.sirius.messenger.api.*
 import java.lang.IllegalStateException
+import kotlin.system.exitProcess
 
 /**
  * Клиент мессенджера
@@ -101,23 +102,172 @@ open class ClientAware (val client: MessengerClient)
 open class UserAware (val user: User) : ClientAware(user.client)
 open class ChatAware (chat: Chat) : UserAware(chat.user)
 
-fun main() {
-//    val client = MessengerClient("http://13.48.191.79/")
-    val client = MessengerClient("http://127.0.0.1:9999/")
 
-    val password = "Тут должен быть ваш пароль"
-    val userId = "Тут ваш логин"
-    val name = "Тут ваше имя"
+fun main() {
+    val client = MessengerClient("http://13.48.191.79/")
+
+    val password = "kotlin"
+    val UserID = "Lounres"
+    val login = "Глеб Минаев"
+
+    var user : User = client.signIn(UserID, password)
+    var chat : Chat = user.chats[0]
+
+    fun Register(): Unit {
+        client.register(UserID, login, password)
+    }
+
+    fun SignIn() : Unit {
+         user = client.signIn(UserID, password)
+    }
+
+    fun SignOut(): Unit {
+        user.signOut()
+        exitProcess(0)
+    }
+
+    fun AuthInfo(): Unit {
+        println(user.authInfo)
+    }
+
+    fun CreateChat() : Unit {
+        var chatName: String? = readLine()
+        while (chatName == null) {
+            println("Incorrect chat name. Retry:")
+            chatName = readLine()
+        }
+        user.createChat(chatName)
+    }
+
+    fun Chats(): Unit {
+        user.refresh()
+        user.refreshChats()
+        user.chats.forEach { println("${it.name}: ${it.messages.size}") }
+    }
+
+    fun GoToChat(): Unit {
+        var message : String? = readLine()
+        while (message == null) {
+            println("Incorrect number. Retry:")
+            message = readLine()
+        }
+        chat = user.chats[message.toInt()]
+    }
+
+    fun ReadChat(): Unit {
+        chat.refresh()
+        chat.messages.forEach {println(it)}
+    }
+
+    fun WriteToChat(): Unit {
+        var message: String? = readLine()
+        while (message == null) {
+            println("Incorrect message. Retry:")
+            message = readLine()
+        }
+        chat.sendMessage(message!!)
+        chat.refresh()
+    }
+
+    fun Members() : Unit {
+        chat.members.forEach { println(it) }
+    }
+
+    fun Invite(): Unit {
+        var person: String? = readLine()
+        while (person == null) {
+            println("Incorrect message. Retry:")
+            person = readLine()
+        }
+        chat.inviteUser(person)
+    }
+
+    fun ChatID() : Unit {
+        println(chat.chatId)
+    }
+
+    fun Refresh(): Unit {
+        user.refresh()
+        user.refreshChats()
+    }
+
+    fun Help() : Unit {
+        println("Type command and then type argument on new line when it's needed. Here are all commands:\n" +
+                "help --- shows list of commands\n" +
+                //"register --- register new user\n" +
+                //"signin --- sign in our messenger\n" +
+                "signout --- sign out our messenger and stop working of this program\n" +
+                "authinfo --- shows your authorisation information\n" +
+                "createchat {name} --- create new chat name\n" +
+                "chats --- shows list of your chat\n" +
+                "gotochat {i} --- change current chat to chat with index i\n" +
+                "readchat --- shows messages from current chat\n" +
+                "writetochat {msg} --- write to current chat message msg\n" +
+                "members --- shows list of members\n" +
+                "invite {nickname} --- invite user with ID nickname\n" +
+                "chatid --- shows chat ID\n" +
+                "refresh --- refreshes all and everything")
+    }
+
+
+    var input : String?
+
+    while (true) {
+        input = readLine()
+        when (input) {
+            "help" -> Help()
+            //"register" -> Register()
+            //"signin" -> SignIn()
+            "signout" -> SignOut()
+            "authinfo" -> AuthInfo()
+            "createchat" -> CreateChat()
+            "chats" -> Chats()
+            "gotochat" -> GoToChat()
+            "readchat" -> ReadChat()
+            "writetochat" -> WriteToChat()
+            "members" -> Members()
+            "invite" -> Invite()
+            "chatid" -> ChatID()
+            "refresh" -> Refresh()
+            else -> println("Incorrect command. Type \"help\" for more information.")
+        }
+        println()
+    }
 
     // регистрация пользователя
-    val userInfo = client.register(userId, name, password)
-    println(userInfo?.displayName)
+//    val userInfo1 = client.register(userId, name, password)
+//    println(userInfo1?.displayName)
 
     // логинимся в чат
-    val user = client.signIn(userId, password)
-    println("access token: ${user.authInfo.accessToken}")
+//    val user = client.signIn(userId, password)
+//    println("access token: ${user.authInfo.accessToken}")
 
     // вывод списка чатов
-    println("Список чатов и сообщений в них:")
-    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
+//    println("Список чатов и сообщений в них:")
+//    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
+
+    // регистрация пользователя
+//    val userInfo = client.register("user2", "user2", "password")
+//    println(userInfo?.displayName)
+
+    // логинимся в чат
+//    val user2 = client.signIn("user2", "password")
+
+//    val chat = user2.createChat("test")
+//    val chat = user.createChat("Hello, Kotlin!")
+//    chat.inviteUser(userId)
+//    chat.inviteUser("senin")
+
+    //user.refresh()
+    // вывод списка чатов
+//    println("Список чатов и сообщений в них:")
+//    user.chats.forEach { println("${it.name}: ${it.messages.size}") }
+
+    //user.chats[1].sendMessage("")
+    //user.chats[1].messages.forEach { println(it)}
+    //user.chats[1].sendMessage("О! Получилось. Ура, вот и сообщение.")
+    //user.chats[1].sendMessage("Извините, не успел вас спросить после лекции. Как ведёт себя Kotlin при встрече глубых строк таких, как \"x\", \"x+5\" и т.п. (т.е. строк, которые ничего в результате не делают)?")
+
+
+    //user.signOut()
 }
