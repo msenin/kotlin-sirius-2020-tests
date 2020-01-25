@@ -38,7 +38,7 @@ fun main(args: Array<String>) {
         try {
             client.register(login, name, password)
             user = client.signIn(login, password)
-            user?.let { chat = it.chats[0] }
+            user?.apply { chat = chats[0] }
         }
         catch (e: Exception) {
             println("Error! ${e.message}")
@@ -50,7 +50,7 @@ fun main(args: Array<String>) {
         val password = prompt("Password: ")
         try {
             user = client.signIn(login, password)
-            user?.let { chat = it.chats[0] }
+            user?.apply { chat = chats[0] }
         }
         catch (e: Exception) {
             println("Error! ${e.message}")
@@ -58,8 +58,8 @@ fun main(args: Array<String>) {
     }
 
     fun signOut() {
-        user?.let {
-            it.signOut()
+        user?.apply {
+            signOut()
             chat = null
             user = null
         }
@@ -85,10 +85,9 @@ fun main(args: Array<String>) {
     }
 
     fun chats() {
-        user?.let { u ->
-            u.refresh()
-            u.refreshChats()
-            u.chats.forEach { println("${it.name} [ ${it.chatId} ]: ${it.messages.size} messages") }
+        user?.apply {
+            refresh()
+            chats.forEach { println("${it.name} [ ${it.chatId} ]: ${it.messages.size} messages") }
         } ?: println("User not signed in")
     }
 
@@ -99,13 +98,16 @@ fun main(args: Array<String>) {
             if (chat == null) {
                 println("Chat with id $chatId not found")
             }
+            else {
+                chat?.apply { messages.forEach { message -> println(message) } }
+            }
         } ?: println("User not signed in")
     }
 
     fun checkChat() {
-        chat?.let {
-            it.refresh()
-            it.messages.forEach { message -> println(message) }
+        chat?.apply {
+            refresh()
+            messages.forEach { message -> println(message) }
         } ?: println("Chat not selected")
     }
 
@@ -131,7 +133,7 @@ fun main(args: Array<String>) {
     }
 
     fun chatInfo() {
-        chat?.let { println(it.chatId) } ?:  println("Chat not selected")
+        chat?.apply { println(chatId) } ?:  println("Chat not selected")
     }
 
     fun refresh() {
