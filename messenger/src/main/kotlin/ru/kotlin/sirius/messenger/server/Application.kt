@@ -30,13 +30,17 @@ import io.ktor.util.pipeline.PipelineContext
 import org.slf4j.event.Level
 import java.util.*
 
-val server = MessengerServer()
+const val databaseUrl = "ktor.settings.databaseUrl"
+const val databaseDriver = "ktor.settings.databaseDriver"
+
+lateinit var storage : IStorage
+lateinit var server : MessengerServer
 
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
-open class JwtUtil(private val secret: String) {
+open class JwtUtil(secret: String) {
     private val accessTokenValidityInMs = 300 * 1000L // 5 minutes
     private val algorithm = Algorithm.HMAC256(secret)
     val verifier: JWTVerifier = JWT.require(algorithm).build()
@@ -51,6 +55,12 @@ val ApplicationCall.user get() = authentication.principal<UserInfo>()
 
 @KtorExperimentalAPI
 fun Application.module() {
+    val config = this.environment.config
+    val url = config.property(databaseUrl).getString()
+    val driver = config.property(databaseDriver).getString()
+    storage = DbStorage(url, driver)
+    server = MessengerServer(storage)
+
     install(ContentNegotiation) {
         jackson {
             enable(SerializationFeature.INDENT_OUTPUT)
@@ -149,7 +159,7 @@ fun Application.module() {
             post("/v1/chats/{id}/messages") {
                 withUser { user ->
                     val chatId = call.parameters["id"]?.toInt() ?: throw ChatNotFoundException()
-                    val info = call.receive<NewMessageInfo>()
+                    val info = call.receive<MessageText>()
                     val messageInfo = server.chatMessagesCreate(chatId, info.text, user)
                     call.respond(messageInfo)
                 }

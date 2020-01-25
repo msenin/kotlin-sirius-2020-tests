@@ -3,7 +3,7 @@ package ru.kotlin.sirius.messenger.server
 /**
  * Хранилище пользователей, чатов, сообщений и пр.
  */
-class Storage {
+class MemoryStorage : IStorage {
 
     // FIXME: эффективнее было бы иметь структуры для быстрого поиска элементов по их id
     private val users =  mutableListOf<UserInfo>()
@@ -28,127 +28,130 @@ class Storage {
         var nextMessageId = 0
     }
 
-    fun generateChatId(): Int {
+    private fun generateChatId(): Int {
         return nextChatId++
     }
 
-    fun generateMemberId(): Int {
+    private fun generateMemberId(): Int {
         return nextMemberId++
     }
 
-    fun generateMessageId(): Int {
+    private fun generateMessageId(): Int {
         return nextMessageId++
     }
 
-    fun containsUser(userId: String): Boolean {
+    override fun containsUser(userId: String): Boolean {
         return users.any { it.userId == userId }
     }
 
-    fun addUser(newUserInfo: UserInfo) {
-        if (containsUser(newUserInfo.userId)) {
+    override fun addUser(info: UserInfo) {
+        if (containsUser(info.userId)) {
             throw UserAlreadyExistsException()
         }
-        users.add(newUserInfo)
+        users.add(info)
     }
 
-    fun findUserById(userId: String): UserInfo? {
+    override fun findUserById(userId: String): UserInfo? {
         return users.firstOrNull{ it.userId == userId }
     }
 
-    fun addRefreshToken(userId: String, token: String) {
+    override fun addRefreshToken(userId: String, token: String) {
         refreshToken2userId[token] = userId
     }
 
-    fun getUserIdByRefreshToken(token: String) : String? {
+    override fun getUserIdByRefreshToken(token: String) : String? {
         return refreshToken2userId[token]
     }
 
-    fun removeRefreshToken(token: String) {
+    override fun removeRefreshToken(token: String) {
         refreshToken2userId.remove(token)
     }
 
-    fun removeRefreshTokensByUserId(userId: String) {
+    override fun removeRefreshTokensByUserId(userId: String) {
         val pairsToRemove = refreshToken2userId.filterValues { it != userId }
         for (entry in pairsToRemove) {
             refreshToken2userId.remove(entry.key, entry.value)
         }
     }
 
-    fun findUsersByPartOfName(partOfName: String?): List<UserInfo> {
+    override fun findUsersByPartOfName(partOfName: String?): List<UserInfo> {
         return users.filter { partOfName == null || it.displayName.contains(partOfName) }
     }
 
-    fun addChat(newChatInfo: ChatInfo) {
-        chats.add(newChatInfo)
+    override fun addChat(newChatInfo: NewChatInfo) : ChatInfo {
+        val chatInfo = ChatInfo(generateChatId(), newChatInfo.defaultName)
+        chats.add(chatInfo)
+        return chatInfo
     }
 
-    fun containsChat(chatId: Int): Boolean {
+    override fun containsChat(chatId: Int): Boolean {
         return chats.any { it.chatId == chatId }
     }
 
-    fun findChatById(chatId: Int): ChatInfo? {
+    override fun findChatById(chatId: Int): ChatInfo? {
         return chats.firstOrNull { it.chatId == chatId }
     }
 
-    fun containsMember(chatId: Int, userId: String) : Boolean {
+    override fun containsMember(chatId: Int, userId: String) : Boolean {
         return members.any { it.chatId == chatId && it.userId == userId}
     }
 
-    fun findMemberByChatIdAndUserId(chatId: Int, userId: String) : MemberInfo? {
+    override fun findMemberByChatIdAndUserId(chatId: Int, userId: String) : MemberInfo? {
         return members.firstOrNull { it.chatId == chatId && it.userId == userId }
     }
 
-    fun findMemberById(memberId: Int) : MemberInfo? {
+    override fun findMemberById(memberId: Int) : MemberInfo? {
         return members.firstOrNull { it.memberId == memberId }
     }
 
-    fun containsMember(memberId: Int) : Boolean {
+    override fun containsMember(memberId: Int) : Boolean {
         return members.any { it.memberId == memberId }
     }
 
-    fun addChatMember(newMemberInfo: MemberInfo) {
-        if (containsMember(newMemberInfo.chatId, newMemberInfo.userId)) {
+    override fun addChatMember(info: NewMemberInfo): MemberInfo {
+        if (containsMember(info.chatId, info.userId)) {
             throw UserAlreadyMemberException()
         }
-        members.add(newMemberInfo)
+        val result = MemberInfo(generateMemberId(), info.chatId, info.chatDisplayName, info.memberDisplayName, info.userId)
+        members.add(result)
+        return result
     }
 
-    fun addChatSecret(chatId: Int, secret: String) {
+    override fun addChatSecret(chatId: Int, secret: String) {
         if (chatId2secret[chatId] != null) {
             throw SecretAlreadyExistsException()
         }
         chatId2secret[chatId] = secret
     }
 
-    fun findChatIdsByUserId(userId: String) : List<Int> {
+    override fun findChatIdsByUserId(userId: String) : List<Int> {
         return members.filter { it.userId == userId }.map { it.chatId }
     }
 
-    private fun findMemberIdsByChatId(chatId: Int) : List<Int> {
+    override fun findMemberIdsByChatId(chatId: Int) : List<Int> {
         return findMembersByChatId(chatId).map { it.memberId }
     }
 
-    fun findMembersByChatId(chatId: Int): List<MemberInfo> {
+    override fun findMembersByChatId(chatId: Int): List<MemberInfo> {
         return members.filter { it.chatId == chatId }
     }
 
-    fun findCommonChatIds(userId1: String, userId2: String): List<Int> {
+    override fun findCommonChatIds(userId1: String, userId2: String): List<Int> {
         val chatIds = findChatIdsByUserId(userId1)
         return chatIds.filter { containsMember(it, userId2) }
     }
 
-    fun getChatSecret(chatId: Int): String? {
+    override fun getChatSecret(chatId: Int): String? {
         return chatId2secret[chatId]
     }
 
-    fun addMessage(messageInfo: MessageInfo) {
-        if (messages.any { it.messageId == messageInfo.messageId }) {
-            throw MessageAlreadyExistsException()
-        }
-        messages.add(messageInfo)
+    override fun addMessage(info: NewMessageInfo): MessageInfo {
+        val message = MessageInfo(generateMessageId(), info.memberId, info.text)
+        messages.add(message)
+        return message
     }
 
-    fun findMessages(chatId: Int, afterMessageId : Int = 0) : List<MessageInfo> {
+    override fun findMessages(chatId: Int, afterMessageId : Int) : List<MessageInfo> {
         val chatMembers = findMemberIdsByChatId(chatId)
         val createdAfter = if (afterMessageId > 0) {
             messages.firstOrNull { it.messageId == afterMessageId }?.createdOn
@@ -161,15 +164,15 @@ class Storage {
                 .sortedBy { it.createdOn }
     }
 
-    fun findMessageById(messageId: Int) : MessageInfo? {
+    override fun findMessageById(messageId: Int) : MessageInfo? {
         return messages.firstOrNull { it.messageId == messageId }
     }
 
-    fun removeMessage(messageInfo: MessageInfo) {
+    override fun removeMessage(messageInfo: MessageInfo) {
         messages.remove(messageInfo)
     }
 
-    fun removeMember(memberInfo: MemberInfo) {
+    override fun removeMember(memberInfo: MemberInfo) {
         members.remove(memberInfo)
     }
 

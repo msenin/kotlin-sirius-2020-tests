@@ -33,6 +33,8 @@ dependencies {
 
     implementation "org.springframework.security:spring-security-config:$spring_security_version"
 
+    implementation "org.jetbrains.exposed:exposed:0.17.7"
+    implementation "com.h2database:h2:1.4.200"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_version"
 
@@ -78,13 +80,14 @@ task tagDockerImage(type: DockerTagTask) {
     dependsOn buildLocalDockerImage
     group = null
     imageId = dockerImageAndTag
-    tag = remoteDockerImageAndTag
+    tag = "$dockerRegistry/$remoteDockerImageAndTag"
     doFirst {
         println("Tag docker image $imageId as $tag ...")
     }
 }
 
 task pushDockerImageToRegistry(type: Exec) {
+    dependsOn tagDockerImage
     executable "sh"
     group = groupDocker
     args "-c", "/usr/bin/docker push $dockerRegistry/$remoteDockerImageAndTag"

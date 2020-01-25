@@ -7,20 +7,16 @@ import java.util.*
 /**
  * Серверная часть мессенджера
  */
-class MessengerServer {
+class MessengerServer(val storage: IStorage) {
 
     internal companion object {
-        val storage = Storage()
         val systemUser = UserInfo("admin", "Administration", "")
         private val passwordEncoder = BCryptPasswordEncoder(4, SecureRandom())
     }
 
     init {
-        if (!storage.containsUser(
-                systemUser.userId)) {
-            storage.addUser(
-                systemUser
-            )
+        if (!storage.containsUser(systemUser.userId)) {
+            storage.addUser(systemUser)
         }
     }
 
@@ -41,12 +37,8 @@ class MessengerServer {
     }
 
     private fun createSystemChatForUser(userInfo: UserInfo) {
-        val systemChat = doCreateChat("System for ${userInfo.userId}",
-            systemUser
-        )
-        val member = MemberInfo(
-            storage.generateMemberId(),
-            systemChat.chatId,
+        val systemChat = doCreateChat("System for ${userInfo.userId}", systemUser)
+        val member = NewMemberInfo(systemChat.chatId,
             "System",
             userInfo.displayName,
             userInfo.userId
@@ -100,19 +92,12 @@ class MessengerServer {
     }
 
     private fun doCreateChat(chatName: String, userInfo: UserInfo): ChatInfo {
-        val chatId = storage.generateChatId()
-        val chat = ChatInfo(chatId, chatName)
-        storage.addChat(chat)
+        val chatInfo = storage.addChat(NewChatInfo(chatName))
+        val chatId = chatInfo.chatId
         storage.addChatSecret(chatId, generateChatSecret(chatId))
-        val member = MemberInfo(
-            storage.generateMemberId(),
-            chatId,
-            chatName,
-            userInfo.displayName,
-            userInfo.userId
-        )
-        storage.addChatMember(member)
-        return chat
+        val newMember = NewMemberInfo(chatId, chatName, userInfo.displayName, userInfo.userId)
+        storage.addChatMember(newMember)
+        return chatInfo
     }
 
     // FIXME: debug secrets for first chats
@@ -150,8 +135,7 @@ class MessengerServer {
         if (realSecret != secret) {
             throw WrongChatSecretException()
         }
-        val member = MemberInfo(
-            storage.generateMemberId(),
+        val member = NewMemberInfo(
             chatId,
             chatName ?: defaultChatName,
             user.displayName,
@@ -191,10 +175,7 @@ class MessengerServer {
     }
 
     private fun doMessagesCreate(memberId: Int, text: String): MessageInfo {
-        val messageId = storage.generateMessageId()
-        val message = MessageInfo(messageId, memberId, text)
-        storage.addMessage(message)
-        return message
+        return storage.addMessage(NewMessageInfo(memberId, text))
     }
 
     fun chatMessagesList(chatId: Int, user: UserInfo, afterId: Int = 1) : List<MessageInfo> {

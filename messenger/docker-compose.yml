@@ -1,0 +1,8 @@
+version: '2'
+services:
+  messenger:
+    image: 300712256265.dkr.ecr.eu-north-1.amazonaws.com/demo/kotlin-messenger:local_build
+    ports:
+      - 80:9999
+    restart: always
+    command: "/opt/kotlin-messenger/bin/kotlin-messenger"

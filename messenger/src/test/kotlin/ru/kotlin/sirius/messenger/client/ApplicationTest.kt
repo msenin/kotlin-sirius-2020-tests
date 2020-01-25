@@ -8,22 +8,41 @@ import io.ktor.server.testing.withTestApplication
 import org.junit.jupiter.api.Test
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.ktor.application.Application
+import io.ktor.config.MapApplicationConfig
 import io.ktor.request.header
 import io.ktor.util.KtorExperimentalAPI
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import ru.kotlin.sirius.messenger.server.NewUserInfo
-import ru.kotlin.sirius.messenger.server.PasswordInfo
-import ru.kotlin.sirius.messenger.server.module
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import ru.kotlin.sirius.messenger.server.*
+import java.io.File
+import java.nio.file.Files
 import kotlin.test.assertNotNull
+
+const val testDbFolder = "./build/test-db"
+
+fun Application.testModule() {
+    (environment.config as MapApplicationConfig).apply {
+        put(databaseUrl, "jdbc:h2:$testDbFolder/database")
+        put(databaseDriver, "org.h2.Driver")
+    }
+    module()
+}
 
 class ApplicationTest {
 
     private val objectMapper = jacksonObjectMapper()
 
+    @BeforeEach
+    fun removeTestDatabase() {
+        File(testDbFolder).deleteRecursively()
+    }
+
     @Test
     fun testHealth() {
-        withTestApplication({ module() }) {
+        withTestApplication({ testModule() }) {
             handleRequest(HttpMethod.Get, "/v1/health").apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals("OK", response.content)
@@ -36,7 +55,7 @@ class ApplicationTest {
     @Test
     fun testRegisterLoginLogout() {
         val userData = NewUserInfo("pupkin", "Pupkin", "password")
-        withTestApplication({ module() }) {
+        withTestApplication({ testModule() }) {
 
             // Register
             handleRequest {
