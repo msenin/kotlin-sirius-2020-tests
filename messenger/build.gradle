@@ -3,7 +3,7 @@ import de.gesellix.gradle.docker.tasks.DockerTagTask
 import de.gesellix.gradle.docker.tasks.GenericDockerTask
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.3.61'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.70'
     id 'application'
     id 'de.gesellix.docker' version '2019-12-16T09-02-32'
 }
@@ -56,9 +56,9 @@ ext.build = (project.hasProperty('teamcity')) ? project.teamcity['build.number']
 version = ext.build.replaceAll("(\\S+)\\s*.*", "\$1")
 
 ext {
-    dockerRegistry = "300712256265.dkr.ecr.eu-north-1.amazonaws.com"
+    dockerRegistry = "ogps.registry.jetbrains.space"
     productName = "kotlin-messenger"
-    dockerImageName = "demo/$productName"
+    dockerImageName = "ogps/$productName"
     dockerImageAndTag = "$dockerImageName:$version"
     remoteDockerImageAndTag = "$dockerImageName:$version"
 }
@@ -91,6 +91,15 @@ task pushDockerImageToRegistry(type: Exec) {
     executable "sh"
     group = groupDocker
     args "-c", "/usr/bin/docker push $dockerRegistry/$remoteDockerImageAndTag"
+    doFirst {
+        println("Pushing image $remoteDockerImageAndTag to registry $dockerRegistry ...")
+    }
+}
+
+task loginToDockerRegistry(type: Exec) {
+    executable "sh"
+    group = groupDocker
+    args "-c", "cat .docker-registry-password | docker login $dockerRegistry --username senin --password-stdin"
 }
 
 task removeLocalDockerImages(type: GenericDockerTask) {

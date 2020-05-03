@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object Constants {
     const val nameLength = 100
     const val messageLength = 1024
+    const val tokenLength = 512
 }
 
 object Users : Table(){
@@ -40,7 +41,7 @@ object ChatId2secret : Table(){
 }
 
 object RefreshToken2userId : Table(){
-    val token: Column<String> = varchar("token", Constants.nameLength).primaryKey()
+    val token: Column<String> = varchar("token", Constants.tokenLength).primaryKey()
     val userId: Column <String> = varchar("userId", Constants.nameLength).references(Users.userId)
 }
 

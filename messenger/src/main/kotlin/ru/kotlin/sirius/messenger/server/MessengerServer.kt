@@ -7,7 +7,9 @@ import java.util.*
 /**
  * Серверная часть мессенджера
  */
-class MessengerServer(val storage: IStorage) {
+class MessengerServer(
+    private val storage: IStorage,
+    private val refreshTokenGenerator: () -> String) {
 
     internal companion object {
         val systemUser = UserInfo("admin", "Administration", "")
@@ -51,12 +53,10 @@ class MessengerServer(val storage: IStorage) {
         if (!passwordEncoder.matches(password, user.passwordHash)) {
             throw UserNotAuthorizedException()
         }
-        val refreshToken = generateRefreshToken()
+        val refreshToken = refreshTokenGenerator()
         storage.addRefreshToken(userId, refreshToken)
         return refreshToken
     }
-
-    private fun generateRefreshToken(): String = UUID.randomUUID().toString()
 
     fun signOut(user: UserInfo) {
         // accessToken-ы перестанут быть валидными быстро, а вот refreshToken-ы пользователя надо явно удалять
@@ -210,6 +210,25 @@ class MessengerServer(val storage: IStorage) {
 
     fun getSystemUser(): UserInfo {
         return systemUser
+    }
+
+    fun invalidateRefreshToken(userId: String, refreshToken: String) {
+        val tokenUserId = storage.getUserIdByRefreshToken(refreshToken)
+        if (tokenUserId != userId) {
+            throw UserNotAuthorizedException()
+        }
+        storage.removeRefreshToken(refreshToken)
+    }
+
+    fun replaceRefreshToken(userId: String, refreshToken: String): String {
+        val tokenUserId = storage.getUserIdByRefreshToken(refreshToken)
+        if (tokenUserId != userId) {
+            throw UserNotAuthorizedException()
+        }
+        val newRefreshToken = refreshTokenGenerator()
+        storage.addRefreshToken(userId, newRefreshToken)
+        storage.removeRefreshToken(refreshToken)
+        return newRefreshToken
     }
 }
 

@@ -20,3 +20,4 @@ data class NewUserInfo(val userId: String,
 data class PasswordInfo(val password: String)
 
 data class AuthInfo(val accessToken: String, val refreshToken: String)
+data class RefreshTokenInfo(val refreshToken: String)

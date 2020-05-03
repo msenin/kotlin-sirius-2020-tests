@@ -3,6 +3,7 @@ package ru.kotlin.sirius.messenger.server
 import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.exceptions.JWTVerificationException
 import com.fasterxml.jackson.databind.SerializationFeature
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -18,6 +19,7 @@ import io.ktor.features.StatusPages
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
+import io.ktor.request.header
 import io.ktor.request.receive
 import io.ktor.response.respond
 import io.ktor.response.respondText
@@ -32,6 +34,8 @@ import java.util.*
 
 const val databaseUrl = "ktor.settings.databaseUrl"
 const val databaseDriver = "ktor.settings.databaseDriver"
+const val accessTokenValidity = "ktor.jwt.access_token_validity_in_ms"
+const val refreshTokenValidity = "ktor.jwt.refresh_token_validity_in_days"
 
 lateinit var storage : IStorage
 lateinit var server : MessengerServer
@@ -40,14 +44,18 @@ fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
-open class JwtUtil(secret: String) {
-    private val accessTokenValidityInMs = 300 * 1000L // 5 minutes
+open class JwtUtil(secret: String, private val accessTokenValidityInMs: Long, private val refreshTokenValidityInDays: Long) {
     private val algorithm = Algorithm.HMAC256(secret)
     val verifier: JWTVerifier = JWT.require(algorithm).build()
+    val verifierExpired: JWTVerifier = JWT.require(algorithm).acceptExpiresAt(refreshTokenValidityInDays * 86400L).build()
     fun createAccessToken(id: String): String = JWT.create()
         .withSubject("Authentication")
         .withExpiresAt(Date(System.currentTimeMillis() + accessTokenValidityInMs))
         .withClaim("id", id)
+        .sign(algorithm)
+    fun createRefreshToken(): String = JWT.create()
+        .withSubject("Refresh")
+        .withExpiresAt(Date(System.currentTimeMillis() + refreshTokenValidityInDays * 86400000L))
         .sign(algorithm)
 }
 
@@ -59,7 +67,12 @@ fun Application.module() {
     val url = config.property(databaseUrl).getString()
     val driver = config.property(databaseDriver).getString()
     storage = DbStorage(url, driver)
-    server = MessengerServer(storage)
+    val jwt = JwtUtil(
+        environment.config.propertyOrNull("ktor.jwt.secret")?.getString() ?: "default_secret",
+        environment.config.propertyOrNull(accessTokenValidity)?.getString()?.toLong() ?: 300 * 1000L,
+        environment.config.propertyOrNull(refreshTokenValidity)?.getString()?.toLong() ?: 30L
+    )
+    server = MessengerServer(storage, jwt::createRefreshToken)
 
     install(ContentNegotiation) {
         jackson {
@@ -68,13 +81,45 @@ fun Application.module() {
     }
 
     install(StatusPages) {
+        exception<UserNotAuthorizedException> {
+            call.respond(HttpStatusCode.Unauthorized)
+        }
+        exception<JWTVerificationException> {
+            call.respond(HttpStatusCode.Unauthorized)
+        }
+        exception<UserNotMemberException> {
+            call.respond(HttpStatusCode.Forbidden)
+        }
+        exception<WrongChatSecretException> {
+            call.respond(HttpStatusCode.Forbidden)
+        }
+        exception<UserNotFoundException> {
+            call.respond(HttpStatusCode.NotFound)
+        }
+        exception<ChatNotFoundException> {
+            call.respond(HttpStatusCode.NotFound)
+        }
+        exception<UserAlreadyExistsException> {
+            call.respond(HttpStatusCode.Conflict)
+        }
+        exception<UserAlreadyMemberException> {
+            call.respond(HttpStatusCode.Conflict)
+        }
+        exception<MessageAlreadyExistsException> {
+            call.respond(HttpStatusCode.Conflict)
+        }
+        exception<SecretAlreadyExistsException> {
+            call.respond(HttpStatusCode.Conflict)
+        }
+        exception<NotImplementedError> {
+            call.respond(HttpStatusCode.NotImplemented)
+        }
     }
 
     install(CallLogging) {
         level = Level.INFO
     }
 
-    val jwt = JwtUtil(environment.config.propertyOrNull("ktor.jwt.secret")?.getString() ?: "default_secret")
     install(Authentication) {
         jwt {
             verifier(jwt.verifier)
@@ -88,6 +133,25 @@ fun Application.module() {
     routing {
         get("/v1/health") {
             call.respondText("OK", ContentType.Text.Html)
+        }
+
+        post("/v1/me/refresh") {
+            val header = call.request.header("Authorization") ?: throw UserNotAuthorizedException()
+            val info = call.receive<RefreshTokenInfo>()
+            if (!header.startsWith("Bearer ")) throw UserNotAuthorizedException()
+            val token = header.substring("Bearer ".length)
+            val decodedAccessToken = jwt.verifierExpired.verify(token)
+            if (decodedAccessToken.subject != "Authentication") {
+                throw UserNotAuthorizedException()
+            }
+            val userId = decodedAccessToken.getClaim("id").asString() ?: throw UserNotAuthorizedException()
+            val decodedRefreshToken =jwt.verifier.verify(info.refreshToken)
+            if (decodedRefreshToken.subject != "Refresh") {
+                throw UserNotAuthorizedException()
+            }
+            val refreshToken = server.replaceRefreshToken(userId, info.refreshToken)
+            val accessToken = jwt.createAccessToken(userId)
+            call.respond(AuthInfo(accessToken, refreshToken))
         }
 
         post("/v1/users") {
@@ -187,6 +251,13 @@ fun Application.module() {
 
             get("/v1/admin") {
                 call.respond(server.getSystemUser())
+            }
+
+            post("/v1/me/invalidate") {
+                withUser { user ->
+                    val info = call.receive<RefreshTokenInfo>()
+                    call.respond(server.invalidateRefreshToken(user.userId, info.refreshToken))
+                }
             }
         }
     }

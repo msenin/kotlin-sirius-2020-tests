@@ -23,7 +23,8 @@ fun prompt(specialPrompt : String? = null) : String {
 
 var user : User? = null
 var chat : Chat? = null
-var messengerBaseUrl = "http://127.0.0.1:9999/"
+//var messengerBaseUrl = "http://127.0.0.1:9999/"
+var messengerBaseUrl = "http://130.193.44.108:7777"
 
 fun main(args: Array<String>) {
     if (args.isNotEmpty()) {
